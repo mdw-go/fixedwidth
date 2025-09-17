@@ -11,10 +11,6 @@ func Marshal(v any) (string, error) {
 	return "", nil // TODO: (requires putting all fields in order of from/to, and ensuring there aren't any overlapping fields)
 }
 func Unmarshal(line string, result any) error {
-	defer func() {
-		if r := recover(); r != nil {
-		}
-	}()
 	if len(line) == 0 {
 		return ErrEmptyLine
 	}
