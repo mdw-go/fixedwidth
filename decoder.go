@@ -68,7 +68,7 @@ func (this *Processor[T]) Parse(line string, result *T) error {
 	}
 	return nil
 }
-func (this *Processor[T]) Print(writer io.Writer, t T) (nn int, err error) {
+func (this *Processor[T]) Fprint(writer io.Writer, t T) (nn int, err error) {
 	v := reflect.ValueOf(t)
 	for _, i := range slices.Sorted(maps.Keys(this.from)) {
 		length := this.to[i] - this.from[i]
@@ -81,8 +81,8 @@ func (this *Processor[T]) Print(writer io.Writer, t T) (nn int, err error) {
 	}
 	return nn, err
 }
-func (this *Processor[T]) Println(writer io.Writer, v T) (nn int, err error) {
-	nn, err = this.Print(writer, v)
+func (this *Processor[T]) Fprintln(writer io.Writer, v T) (nn int, err error) {
+	nn, err = this.Fprint(writer, v)
 	if err != nil {
 		return nn, err
 	}
@@ -92,13 +92,11 @@ func (this *Processor[T]) Println(writer io.Writer, v T) (nn int, err error) {
 }
 func (this *Processor[T]) Sprint(v T) string {
 	var result strings.Builder
-	_, _ = this.Print(&result, v)
+	_, _ = this.Fprint(&result, v)
 	return result.String()
 }
 func (this *Processor[T]) Sprintln(v T) string {
-	var result strings.Builder
-	_, _ = this.Println(&result, v)
-	return result.String()
+	return this.Sprint(v) + "\n"
 }
 
 var (
