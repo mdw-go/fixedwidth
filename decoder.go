@@ -68,25 +68,37 @@ func (this *Processor[T]) Parse(line string, result *T) error {
 	}
 	return nil
 }
-func (this *Processor[T]) Sprintln(v T) string {
-	var result strings.Builder
-	_, _ = this.Println(&result, v)
-	return result.String()
-}
-func (this *Processor[T]) Println(writer io.Writer, v T) (nn int, err error) {
-	V := reflect.ValueOf(v)
+func (this *Processor[T]) Print(writer io.Writer, t T) (nn int, err error) {
+	v := reflect.ValueOf(t)
 	for _, i := range slices.Sorted(maps.Keys(this.from)) {
 		length := this.to[i] - this.from[i]
 		template := fmt.Sprintf("%%-%ds", length)
-		n, err := fmt.Fprintf(writer, template, V.Field(i).String())
+		n, err := fmt.Fprintf(writer, template, v.Field(i).String())
 		nn += n
 		if err != nil {
 			return nn, err
 		}
 	}
+	return nn, err
+}
+func (this *Processor[T]) Println(writer io.Writer, v T) (nn int, err error) {
+	nn, err = this.Print(writer, v)
+	if err != nil {
+		return nn, err
+	}
 	n, err := io.WriteString(writer, "\n")
 	nn += n
 	return nn, err
+}
+func (this *Processor[T]) Sprint(v T) string {
+	var result strings.Builder
+	_, _ = this.Print(&result, v)
+	return result.String()
+}
+func (this *Processor[T]) Sprintln(v T) string {
+	var result strings.Builder
+	_, _ = this.Println(&result, v)
+	return result.String()
 }
 
 var (
