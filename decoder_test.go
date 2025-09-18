@@ -1,6 +1,7 @@
 package fixedwidth
 
 import (
+	"bytes"
 	"testing"
 
 	"github.com/mdw-go/testing/should"
@@ -26,5 +27,10 @@ func TestParse(t *testing.T) {
 		C: "ccc",
 		D: "dddd",
 	})
+	var buffer bytes.Buffer
+	n, err := processor.Fprintln(&buffer, letters)
+	should.So(t, err, should.BeNil)
+	should.So(t, n, should.Equal, len(input+"\n"))
+	should.So(t, buffer.String(), should.Equal, input+"\n")
 	should.So(t, processor.Sprintln(letters), should.Equal, input+"\n")
 }
