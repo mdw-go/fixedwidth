@@ -1,6 +1,7 @@
 package fixedwidth
 
 import (
+	"bytes"
 	"errors"
 	"fmt"
 	"io"
@@ -8,13 +9,15 @@ import (
 	"reflect"
 	"slices"
 	"strconv"
-	"strings"
+	"sync"
 )
 
 type Processor[T any] struct {
 	from      map[int]int
 	to        map[int]int
 	minLength int
+	buffer    *bytes.Buffer
+	lock      sync.Mutex
 }
 
 func NewProcessor[T any]() (*Processor[T], error) {
@@ -55,6 +58,7 @@ func NewProcessor[T any]() (*Processor[T], error) {
 		from:      FROM,
 		to:        TO,
 		minLength: minLength,
+		buffer:    new(bytes.Buffer),
 	}, nil
 }
 
@@ -91,9 +95,11 @@ func (this *Processor[T]) Fprintln(writer io.Writer, v T) (nn int, err error) {
 	return nn, err
 }
 func (this *Processor[T]) Sprint(v T) string {
-	var result strings.Builder
-	_, _ = this.Fprint(&result, v)
-	return result.String()
+	this.lock.Lock()
+	defer this.lock.Unlock()
+	this.buffer.Reset()
+	_, _ = this.Fprint(this.buffer, v)
+	return this.buffer.String()
 }
 func (this *Processor[T]) Sprintln(v T) string {
 	return this.Sprint(v) + "\n"
