@@ -1,19 +1,23 @@
 package fixedwidth
 
 import (
+	"errors"
 	"fmt"
+	"io"
 	"maps"
 	"reflect"
+	"slices"
 	"strconv"
+	"strings"
 )
 
-type Decoder[T any] struct {
+type Processor[T any] struct {
 	from      map[int]int
 	to        map[int]int
 	minLength int
 }
 
-func NewDecoder[T any]() (*Decoder[T], error) {
+func NewProcessor[T any]() (*Processor[T], error) {
 	var v T
 	FROM := make(map[int]int)
 	TO := make(map[int]int)
@@ -47,15 +51,14 @@ func NewDecoder[T any]() (*Decoder[T], error) {
 			minLength = to
 		}
 	}
-
-	return &Decoder[T]{
+	return &Processor[T]{
 		from:      FROM,
 		to:        TO,
 		minLength: minLength,
 	}, nil
 }
 
-func (this *Decoder[T]) Decode(line string, result *T) error {
+func (this *Processor[T]) Parse(line string, result *T) error {
 	if len(line) < this.minLength {
 		return fmt.Errorf("%w: line too short", ErrLineOverflow)
 	}
@@ -65,3 +68,31 @@ func (this *Decoder[T]) Decode(line string, result *T) error {
 	}
 	return nil
 }
+func (this *Processor[T]) Sprintln(v T) string {
+	var result strings.Builder
+	_, _ = this.Println(&result, v)
+	return result.String()
+}
+func (this *Processor[T]) Println(writer io.Writer, v T) (nn int, err error) {
+	V := reflect.ValueOf(v)
+	for _, i := range slices.Sorted(maps.Keys(this.from)) {
+		length := this.to[i] - this.from[i]
+		template := fmt.Sprintf("%%-%ds", length)
+		n, err := fmt.Fprintf(writer, template, V.Field(i).String())
+		nn += n
+		if err != nil {
+			return nn, err
+		}
+	}
+	n, err := io.WriteString(writer, "\n")
+	nn += n
+	return nn, err
+}
+
+var (
+	ErrInvalidTarget = errors.New("invalid target type")
+	ErrInvalidFrom   = errors.New("invalid 'from' value")
+	ErrInvalidTo     = errors.New("invalid 'to' value")
+	ErrInvalidFromTo = errors.New("invalid from/to (from > to)")
+	ErrLineOverflow  = errors.New("line overflow")
+)

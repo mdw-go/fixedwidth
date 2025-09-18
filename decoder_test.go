@@ -6,17 +6,19 @@ import (
 	"github.com/mdw-go/testing/should"
 )
 
-func TestDecoder(t *testing.T) {
-	type Letters struct {
-		A string `from:"0" to:"1"`
-		B string `from:"1" to:"3"`
-		C string `from:"3" to:"6"`
-		D string `from:"6" to:"10"`
-	}
-	decoder, err := NewDecoder[Letters]()
+type Letters struct {
+	A string `from:"0" to:"1"`
+	B string `from:"1" to:"3"`
+	C string `from:"3" to:"6"`
+	D string `from:"6" to:"10"`
+}
+
+func TestParse(t *testing.T) {
+	processor, err := NewProcessor[Letters]()
 	should.So(t, err, should.BeNil)
 	var letters Letters
-	err = decoder.Decode("a"+"bb"+"ccc"+"dddd", &letters)
+	input := "a" + "bb" + "ccc" + "dddd"
+	err = processor.Parse(input, &letters)
 	should.So(t, err, should.BeNil)
 	should.So(t, letters, should.Equal, Letters{
 		A: "a",
@@ -24,4 +26,5 @@ func TestDecoder(t *testing.T) {
 		C: "ccc",
 		D: "dddd",
 	})
+	should.So(t, processor.Sprintln(letters), should.Equal, input+"\n")
 }
